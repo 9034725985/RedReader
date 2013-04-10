@@ -24,11 +24,15 @@ import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.text.ClipboardManager;
+import android.util.TypedValue;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import org.apache.http.StatusLine;
 import org.holoeverywhere.app.Activity;
 import org.holoeverywhere.app.AlertDialog;
 import org.holoeverywhere.app.Fragment;
@@ -39,11 +43,17 @@ import org.holoeverywhere.widget.LinearLayout;
 import org.holoeverywhere.widget.ListView;
 import org.holoeverywhere.widget.TextView;
 import org.quantumbadger.redreader.R;
+import org.quantumbadger.redreader.account.RedditAccount;
 import org.quantumbadger.redreader.account.RedditAccountManager;
+import org.quantumbadger.redreader.activities.BugReportActivity;
 import org.quantumbadger.redreader.activities.PostListingActivity;
+import org.quantumbadger.redreader.cache.CacheManager;
+import org.quantumbadger.redreader.cache.CacheRequest;
+import org.quantumbadger.redreader.cache.RequestFailureType;
 import org.quantumbadger.redreader.common.Constants;
 import org.quantumbadger.redreader.common.General;
 import org.quantumbadger.redreader.common.PrefsUtility;
+import org.quantumbadger.redreader.common.RRError;
 import org.quantumbadger.redreader.fragments.PostListingFragment;
 import org.quantumbadger.redreader.fragments.PostPropertiesDialog;
 import org.quantumbadger.redreader.fragments.UserProfileDialog;
@@ -52,7 +62,10 @@ import org.quantumbadger.redreader.reddit.prepared.RedditPreparedPost;
 import org.quantumbadger.redreader.reddit.things.RedditSubreddit;
 import org.quantumbadger.redreader.views.list.SwipableListItemView;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.UUID;
 
 public final class RedditPostView extends SwipableListItemView implements RedditPreparedPost.ThumbnailLoadedCallback {
 
@@ -85,7 +98,7 @@ public final class RedditPostView extends SwipableListItemView implements Reddit
 	private final int offsetBeginAllowed, offsetActionPerformed;
 
 	public static enum Action {
-		UPVOTE, UNVOTE, DOWNVOTE, SAVE, HIDE, UNSAVE, UNHIDE, REPORT, SHARE, REPLY, USER_PROFILE, EXTERNAL, PROPERTIES, COMMENTS, LINK, SHARE_COMMENTS, GOTO_SUBREDDIT, ACTION_MENU
+		UPVOTE, UNVOTE, DOWNVOTE, SAVE, HIDE, UNSAVE, UNHIDE, REPORT, SHARE, REPLY, USER_PROFILE, EXTERNAL, PROPERTIES, COMMENTS, LINK, SHARE_COMMENTS, GOTO_SUBREDDIT, ACTION_MENU, SAVE_IMAGE, COPY
 	}
 
 	private final class ActionDescriptionPair {
@@ -244,6 +257,8 @@ public final class RedditPostView extends SwipableListItemView implements Reddit
 
 		dpScale = context.getResources().getDisplayMetrics().density; // TODO xml?
 
+		final float fontScale = PrefsUtility.appearance_fontscale_posts(context, PreferenceManager.getDefaultSharedPreferences(context));
+
 		final FrameLayout mainLayout = (FrameLayout) inflate(context, R.layout.reddit_post, null);
 		final LinearLayout visiblePostLayout = (LinearLayout) mainLayout.findViewById(R.id.reddit_post_layout);
 
@@ -255,6 +270,9 @@ public final class RedditPostView extends SwipableListItemView implements Reddit
 		subtitle = (TextView) mainLayout.findViewById(R.id.reddit_post_subtitle);
 		commentsButton = (LinearLayout) mainLayout.findViewById(R.id.reddit_post_comments_button);
 		commentsText = (TextView)commentsButton.findViewById(R.id.reddit_post_comments_text);
+
+		title.setTextSize(TypedValue.COMPLEX_UNIT_PX, title.getTextSize() * fontScale);
+		subtitle.setTextSize(TypedValue.COMPLEX_UNIT_PX, subtitle.getTextSize() * fontScale);
 
 		leftOverlayText = (TextView) mainLayout.findViewById(R.id.reddit_post_fling_text_left);
 		rightOverlayText = (TextView) mainLayout.findViewById(R.id.reddit_post_fling_text_right);
@@ -402,9 +420,11 @@ public final class RedditPostView extends SwipableListItemView implements Reddit
 		}
 
 		menu.add(new RPVMenuItem(context, R.string.action_external, Action.EXTERNAL));
+		if(post.imageUrl != null) menu.add(new RPVMenuItem(context, R.string.action_save_image, Action.SAVE_IMAGE));
 		menu.add(new RPVMenuItem(context, R.string.action_gotosubreddit, Action.GOTO_SUBREDDIT));
 		menu.add(new RPVMenuItem(context, R.string.action_share, Action.SHARE));
 		menu.add(new RPVMenuItem(context, R.string.action_share_comments, Action.SHARE_COMMENTS));
+		menu.add(new RPVMenuItem(context, R.string.action_copy, Action.COPY));
 		menu.add(new RPVMenuItem(context, R.string.action_user_profile, Action.USER_PROFILE));
 		menu.add(new RPVMenuItem(context, R.string.action_properties, Action.PROPERTIES));
 
@@ -432,47 +452,47 @@ public final class RedditPostView extends SwipableListItemView implements Reddit
 
 	public static void onActionSelected(final RedditPreparedPost post, final Fragment fragmentParent, final Action action) {
 
-		final Activity context = fragmentParent.getSupportActivity();
+		final Activity activity = fragmentParent.getSupportActivity();
 
 		switch(action) {
 
 			case UPVOTE:
-				post.action(context, RedditAPI.RedditAction.UPVOTE);
+				post.action(activity, RedditAPI.RedditAction.UPVOTE);
 				break;
 
 			case DOWNVOTE:
-				post.action(context, RedditAPI.RedditAction.DOWNVOTE);
+				post.action(activity, RedditAPI.RedditAction.DOWNVOTE);
 				break;
 
 			case UNVOTE:
-				post.action(context, RedditAPI.RedditAction.UNVOTE);
+				post.action(activity, RedditAPI.RedditAction.UNVOTE);
 				break;
 
 			case SAVE:
-				post.action(context, RedditAPI.RedditAction.SAVE);
+				post.action(activity, RedditAPI.RedditAction.SAVE);
 				break;
 
 			case UNSAVE:
-				post.action(context, RedditAPI.RedditAction.UNSAVE);
+				post.action(activity, RedditAPI.RedditAction.UNSAVE);
 				break;
 
 			case HIDE:
-				post.action(context, RedditAPI.RedditAction.HIDE);
+				post.action(activity, RedditAPI.RedditAction.HIDE);
 				break;
 
 			case UNHIDE:
-				post.action(context, RedditAPI.RedditAction.UNHIDE);
+				post.action(activity, RedditAPI.RedditAction.UNHIDE);
 				break;
 
 			case REPORT:
 
-				new AlertDialog.Builder(context)
+				new AlertDialog.Builder(activity)
 						.setTitle(R.string.action_report)
 						.setMessage(R.string.action_report_sure)
 						.setPositiveButton(R.string.action_report,
 								new DialogInterface.OnClickListener() {
 									public void onClick(final DialogInterface dialog, final int which) {
-										post.action(context, RedditAPI.RedditAction.REPORT);
+										post.action(activity, RedditAPI.RedditAction.REPORT);
 										// TODO update the view to show the result
 										// TODO don't forget, this also hides
 									}
@@ -485,7 +505,65 @@ public final class RedditPostView extends SwipableListItemView implements Reddit
 			case EXTERNAL: {
 				final Intent intent = new Intent(Intent.ACTION_VIEW);
 				intent.setData(Uri.parse(post.url));
-				context.startActivity(intent);
+				activity.startActivity(intent);
+				break;
+			}
+
+			case SAVE_IMAGE: {
+
+				final RedditAccount anon = RedditAccountManager.getAnon();
+
+				CacheManager.getInstance(activity).makeRequest(new CacheRequest(General.uriFromString(post.imageUrl), anon, null,
+						Constants.Priority.IMAGE_VIEW, 0, CacheRequest.DownloadType.IF_NECESSARY,
+						Constants.FileType.IMAGE, false, false, false, activity) {
+
+					@Override
+					protected void onCallbackException(Throwable t) {
+						BugReportActivity.handleGlobalError(context, t);
+					}
+
+					@Override
+					protected void onDownloadNecessary() {
+						General.quickToast(context, R.string.download_downloading);
+					}
+
+					@Override
+					protected void onDownloadStarted() {}
+
+					@Override
+					protected void onFailure(RequestFailureType type, Throwable t, StatusLine status, String readableMessage) {
+						final RRError error = General.getGeneralErrorForFailure(context, type, t, status);
+						General.showResultDialog(activity, error);
+					}
+
+					@Override
+					protected void onProgress(long bytesRead, long totalBytes) {}
+
+					@Override
+					protected void onSuccess(CacheManager.ReadableCacheFile cacheFile, long timestamp, UUID session, boolean fromCache, String mimetype) {
+
+						File dst = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), General.uriFromString(post.imageUrl).getPath());
+
+						if(dst.exists()) {
+							int count = 0;
+
+							while(dst.exists()) {
+								count++;
+								dst = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), count + "_" + General.uriFromString(post.imageUrl).getPath().substring(1));
+							}
+						}
+
+						try {
+							General.copyFile(cacheFile.getInputStream(), dst);
+						} catch(IOException e) {
+							notifyFailure(RequestFailureType.STORAGE, e, null, "Could not copy file");
+							return;
+						}
+
+						General.quickToast(context, context.getString(R.string.action_save_image_success) + " " + dst.getName());
+					}
+				});
+
 				break;
 			}
 
@@ -494,8 +572,8 @@ public final class RedditPostView extends SwipableListItemView implements Reddit
 				final Intent mailer = new Intent(Intent.ACTION_SEND);
 				mailer.setType("text/plain");
 				mailer.putExtra(Intent.EXTRA_SUBJECT, post.title);
-				mailer.putExtra(Intent.EXTRA_TEXT, post.url + "\r\n\r\nSent using RedReader on Android");
-				context.startActivity(Intent.createChooser(mailer, "Share Post")); // TODO string
+				mailer.putExtra(Intent.EXTRA_TEXT, post.url);
+				activity.startActivity(Intent.createChooser(mailer, "Share Post")); // TODO string
 				break;
 			}
 
@@ -504,8 +582,15 @@ public final class RedditPostView extends SwipableListItemView implements Reddit
 				final Intent mailer = new Intent(Intent.ACTION_SEND);
 				mailer.setType("text/plain");
 				mailer.putExtra(Intent.EXTRA_SUBJECT, "Comments for " + post.title);
-				mailer.putExtra(Intent.EXTRA_TEXT, Constants.Reddit.getUri(Constants.Reddit.PATH_COMMENTS + post.idAlone).toString() + "\r\n\r\nSent using RedReader on Android");
-				context.startActivity(Intent.createChooser(mailer, "Share Comments")); // TODO string
+				mailer.putExtra(Intent.EXTRA_TEXT, Constants.Reddit.getUri(Constants.Reddit.PATH_COMMENTS + post.idAlone).toString());
+				activity.startActivity(Intent.createChooser(mailer, "Share Comments")); // TODO string
+				break;
+			}
+
+			case COPY: {
+
+				ClipboardManager manager = (ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
+				manager.setText(post.url);
 				break;
 			}
 
@@ -513,9 +598,9 @@ public final class RedditPostView extends SwipableListItemView implements Reddit
 
 				final RedditSubreddit subreddit = new RedditSubreddit("/r/" + post.src.subreddit, "/r/" + post.src.subreddit, true);
 
-				final Intent intent = new Intent(context, PostListingActivity.class);
+				final Intent intent = new Intent(activity, PostListingActivity.class);
 				intent.putExtra("subreddit", subreddit);
-				context.startActivityForResult(intent, 1);
+				activity.startActivityForResult(intent, 1);
 				break;
 			}
 
@@ -536,7 +621,7 @@ public final class RedditPostView extends SwipableListItemView implements Reddit
 				break;
 
 			case ACTION_MENU:
-				showActionMenu(context, fragmentParent, post);
+				showActionMenu(activity, fragmentParent, post);
 				break;
 		}
 	}

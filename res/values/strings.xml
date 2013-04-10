@@ -35,6 +35,12 @@
 
     <!-- Appearance Prefs -->
 
+    <string name="pref_appearance_theme_header">Theme</string>
+    <string name="pref_appearance_font_header">Font</string>
+    <string name="pref_appearance_thumbnails_header">Thumbnails</string>
+    <string name="pref_appearance_tabletmode_header">Tablet Mode</string>
+    <string name="pref_appearance_other_header">Other</string>
+
     <string name="pref_appearance_twopane_key">pref_appearance_twopane</string>
     <string name="pref_appearance_twopane_title">Tablet Mode (two pane)</string>
 
@@ -44,21 +50,38 @@
     <string name="pref_appearance_solidblack_key">pref_appearance_solidblack</string>
     <string name="pref_appearance_solidblack_title">Solid black in night mode</string>
 
+    <string name="pref_appearance_fontscale_posts_key">pref_appearance_fontscale_posts</string>
+    <string name="pref_appearance_fontscale_posts_title">Posts Font Scale</string>
+
+    <string name="pref_appearance_fontscale_comments_key">pref_appearance_fontscale_comments</string>
+    <string name="pref_appearance_fontscale_comments_title">Comments Font Scale</string>
+
     <string name="pref_appearance_thumbnails_show_key">pref_appearance_thumbnails_show</string>
     <string name="pref_appearance_thumbnails_show_title">Show thumbnails</string>
+
+    <string name="pref_appearance_thumbnails_nsfw_show_key">pref_appearance_thumbnails_nsfw_show</string>
+    <string name="pref_appearance_thumbnails_nsfw_show_title">Show NSFW thumbnails</string>
 
     <string name="pref_appearance_thumbnails_wifionly_key">pref_appearance_thumbnails_wifionly</string>
     <string name="pref_appearance_thumbnails_wifionly_title">Thumbnails on Wi-Fi only</string>
 
+    <string name="pref_appearance_loading_detail_key">pref_appearance_loading_detail</string>
+    <string name="pref_appearance_loading_detail_title">Show detailed loading messages</string>
+
     <!-- Behaviour Prefs -->
 
-    <string name="pref_behaviour_fling_post_header">Post Fling Actions</string>
+    <string name="pref_behaviour_actions_post_header">Post Actions</string>
+    <string name="pref_behaviour_actions_comment_header">Comment Actions</string>
+    <string name="pref_behaviour_posts_header">Posts</string>
 
     <string name="pref_behaviour_fling_post_left_key">pref_behaviour_fling_post_left</string>
     <string name="pref_behaviour_fling_post_left_title">Fling Post Left Action</string>
 
     <string name="pref_behaviour_fling_post_right_key">pref_behaviour_fling_post_right</string>
     <string name="pref_behaviour_fling_post_right_title">Fling Post Right Action</string>
+
+    <string name="pref_behaviour_actions_comment_tap_key">pref_behaviour_actions_comment_tap</string>
+    <string name="pref_behaviour_actions_comment_tap_title">Comment Tap Action</string>
 
     <string name="pref_behaviour_nsfw_key">pref_behaviour_nsfw</string>
     <string name="pref_behaviour_nsfw_title">Show NSFW content</string>
@@ -88,6 +111,7 @@
     <!-- Options Menu -->
 
     <string name="options_accounts">Accounts</string>
+    <string name="options_accounts_long">Reddit Accounts</string>
     <string name="options_theme">Themes</string>
     <string name="options_settings">Settings</string>
 
@@ -126,7 +150,7 @@
 
     <string name="accounts_anon">Anonymous</string>
     <string name="accounts_default">Default</string>
-    <string name="accounts_add">Add Account</string>
+    <string name="accounts_add">Add Reddit Account</string>
     <string name="accounts_setdefault">Set as Default</string>
     <string name="accounts_reauth">Reauthenticate</string>
     <string name="accounts_delete">Delete</string>
@@ -192,6 +216,7 @@
     <string name="action_comment_links">Links in Comment</string>
     <string name="action_share">Share</string>
     <string name="action_share_comments">Share Comments</string>
+    <string name="action_copy">Copy</string>
     <string name="action_gotosubreddit">Go to Subreddit</string>
     <string name="action_reply">Reply</string>
     <string name="action_user_profile">User Profile</string>
@@ -201,9 +226,14 @@
     <string name="action_comments_short">Comments</string>
     <string name="action_link">Open Link</string>
     <string name="action_link_short">Link</string>
+    <string name="action_collapse">Toggle Collapse</string>
+    <string name="action_nothing">Do Nothing</string>
 
     <string name="action_report">Report</string>
     <string name="action_report_sure">Are you sure you want to report this?</string>
+
+    <string name="action_save_image">Save Image</string>
+    <string name="action_save_image_success">Saved to Pictures folder as</string>
 
     <!-- Download Messages -->
 

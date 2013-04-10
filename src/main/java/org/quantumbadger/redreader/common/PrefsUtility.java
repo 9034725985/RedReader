@@ -72,7 +72,7 @@ public final class PrefsUtility {
 	}
 
 	public static enum AppearanceTheme {
-		RED, GREEN, BLUE, GRAY, NIGHT
+		RED, GREEN, BLUE, LTBLUE, ORANGE, GRAY, NIGHT
 	}
 
 	public static AppearanceTheme appearance_theme(final Context context, final SharedPreferences sharedPreferences) {
@@ -94,6 +94,14 @@ public final class PrefsUtility {
 
 			case BLUE:
 				activity.setTheme(R.style.RR_Light_Blue);
+				break;
+
+			case LTBLUE:
+				activity.setTheme(R.style.RR_Light_LtBlue);
+				break;
+
+			case ORANGE:
+				activity.setTheme(R.style.RR_Light_Orange);
 				break;
 
 			case GRAY:
@@ -125,6 +133,22 @@ public final class PrefsUtility {
 		}
 	}
 
+	public static boolean appearance_thumbnails_nsfw_show(final Context context, final SharedPreferences sharedPreferences) {
+		return getBoolean(R.string.pref_appearance_thumbnails_nsfw_show_key, false, context, sharedPreferences);
+	}
+
+	public static float appearance_fontscale_comments(final Context context, final SharedPreferences sharedPreferences) {
+		return Float.valueOf(getString(R.string.pref_appearance_fontscale_comments_key, "1", context,  sharedPreferences));
+	}
+
+	public static float appearance_fontscale_posts(final Context context, final SharedPreferences sharedPreferences) {
+		return Float.valueOf(getString(R.string.pref_appearance_fontscale_posts_key, "1", context,  sharedPreferences));
+	}
+
+	public static boolean appearance_loading_detail(final Context context, final SharedPreferences sharedPreferences) {
+		return getBoolean(R.string.pref_appearance_loading_detail_key, false, context, sharedPreferences);
+	}
+
 	///////////////////////////////
 	// pref_behaviour
 	///////////////////////////////
@@ -141,6 +165,14 @@ public final class PrefsUtility {
 
 	public static PostFlingAction pref_behaviour_fling_post_right(final Context context, final SharedPreferences sharedPreferences) {
 		return PostFlingAction.valueOf(getString(R.string.pref_behaviour_fling_post_right_key, "hide", context, sharedPreferences).toUpperCase());
+	}
+
+	public static enum CommentAction {
+		COLLAPSE, ACTION_MENU, NOTHING
+	}
+
+	public static CommentAction pref_behaviour_actions_comment_tap(final Context context, final SharedPreferences sharedPreferences) {
+		return CommentAction.valueOf(getString(R.string.pref_behaviour_actions_comment_tap_key, "action_menu", context, sharedPreferences).toUpperCase());
 	}
 
 	public static boolean pref_behaviour_nsfw(final Context context, final SharedPreferences sharedPreferences) {

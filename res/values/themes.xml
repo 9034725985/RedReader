@@ -33,7 +33,7 @@
 
         <!-- Post -->
 
-        <item name="rrPostTitleCol">#FFFFFF</item>
+        <item name="rrPostTitleCol">#DDDDDD</item>
         <item name="rrPostTitleReadCol">#909090</item>
         <item name="rrPostSubtitleCol">#909090</item>
         <item name="rrPostSubtitleBoldCol">#BBBBBB</item>
@@ -41,7 +41,7 @@
         <item name="rrPostSubtitleDownvoteCol">#9494FF</item>
         <item name="rrPostCommentsButtonBackCol">#444444</item>
         <item name="rrPostCommentsButtonTextCol">#BBBBBB</item>
-        <item name="rrPostThumbnailBackground">#444444</item>
+        <item name="rrPostThumbnailBackground">#000000</item>
         <item name="rrPostFlingTextCol">#FFFFFF</item>
 
         <!-- Comment -->
@@ -72,6 +72,10 @@
         <item name="rrIconFfRight">@drawable/ic_action_ff_right_dark</item>
         <item name="rrIconTick">@drawable/ic_action_tick_dark</item>
 
+    </style>
+
+    <style name="RR.Startup" parent="RR.Dark">
+        <item name="android:actionBarStyle">@style/RR.Startup.ActionBarStyle</item>
     </style>
 
     <style name="RR.Light.DarkActionBar" parent="Holo.Theme.Light">
@@ -139,12 +143,20 @@
         <item name="rrActionBarCol">#06456A</item>
     </style>
 
+    <style name="RR.Light.LtBlue" parent="RR.Light.DarkActionBar">
+        <item name="rrActionBarCol">#33B5E5</item>
+    </style>
+
     <style name="RR.Light.Red" parent="RR.Light.DarkActionBar">
         <item name="rrActionBarCol">#A60000</item>
     </style>
 
     <style name="RR.Light.Green" parent="RR.Light.DarkActionBar">
         <item name="rrActionBarCol">#268E00</item>
+    </style>
+
+    <style name="RR.Light.Orange" parent="RR.Light.DarkActionBar">
+        <item name="rrActionBarCol">#DD5500</item>
     </style>
 
 </resources>

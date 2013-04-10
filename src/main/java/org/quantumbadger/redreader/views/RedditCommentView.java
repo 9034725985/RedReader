@@ -22,10 +22,12 @@ import android.graphics.Color;
 import android.view.View;
 import android.view.ViewGroup;
 import com.laurencedawson.activetextview.ActiveTextView;
+import org.holoeverywhere.preference.PreferenceManager;
 import org.holoeverywhere.widget.FrameLayout;
 import org.holoeverywhere.widget.LinearLayout;
 import org.holoeverywhere.widget.TextView;
 import org.quantumbadger.redreader.common.General;
+import org.quantumbadger.redreader.common.PrefsUtility;
 import org.quantumbadger.redreader.fragments.CommentListingFragment;
 import org.quantumbadger.redreader.reddit.prepared.RedditPreparedComment;
 
@@ -41,6 +43,7 @@ public class RedditCommentView extends LinearLayout {
 	private final View leftIndent, leftDividerLine;
 
 	private final int bodyCol;
+	private final float fontScale;
 
 	public RedditCommentView(final Context context, final int headerCol, final int bodyCol) {
 
@@ -52,8 +55,10 @@ public class RedditCommentView extends LinearLayout {
 		main = new LinearLayout(context);
 		main.setOrientation(VERTICAL);
 
+		fontScale = PrefsUtility.appearance_fontscale_comments(context, PreferenceManager.getDefaultSharedPreferences(context));
+
 		header = new TextView(context);
-		header.setTextSize(11.0f);
+		header.setTextSize(11.0f * fontScale);
 		header.setTextColor(headerCol);
 		main.addView(header);
 
@@ -85,7 +90,10 @@ public class RedditCommentView extends LinearLayout {
 
 	public void reset(final Context context, final CommentListingFragment fragment, final RedditPreparedComment comment, final ActiveTextView.OnLinkClickedListener listener) {
 
+		if(this.comment != null) this.comment.unbind(this);
+
 		this.comment = comment;
+		comment.bind(this);
 
 		final int paddingPixelsPerIndent = General.dpToPixels(context, 10.0f); // TODO Add in vertical lines?
 		leftIndent.getLayoutParams().width = paddingPixelsPerIndent * comment.indentation;
@@ -98,12 +106,22 @@ public class RedditCommentView extends LinearLayout {
 		}
 
 		bodyHolder.removeAllViews();
-		bodyHolder.addView(comment.body.generate(context, 13.0f, bodyCol, new ActiveTextView.OnLinkClickedListener() {
+		bodyHolder.addView(comment.body.generate(context, 13.0f * fontScale, bodyCol, new ActiveTextView.OnLinkClickedListener() {
 			public void onClick(String url) {
 				if(url != null) {
 					listener.onClick(url);
 				} else {
-					fragment.handleCommentVisibilityToggle(RedditCommentView.this);
+
+					// TODO separate preference for comment body click?
+
+					switch(PrefsUtility.pref_behaviour_actions_comment_tap(context, PreferenceManager.getDefaultSharedPreferences(context))) {
+						case COLLAPSE:
+							fragment.handleCommentVisibilityToggle(RedditCommentView.this);
+							break;
+						case ACTION_MENU:
+							fragment.openContextMenu(RedditCommentView.this);
+							break;
+					}
 				}
 			}
 		}));

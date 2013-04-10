@@ -77,6 +77,7 @@ public final class RedditPreparedComment implements Hideable, RedditPreparedInbo
 		// TODO strings
 		// TODO custom time
 
+		// TODO don't fetch these every time
 		final TypedArray appearance = context.obtainStyledAttributes(new int[]{
 				R.attr.rrCommentHeaderBoldCol,
 				R.attr.rrCommentHeaderAuthorCol,
@@ -150,6 +151,10 @@ public final class RedditPreparedComment implements Hideable, RedditPreparedInbo
 		boundView = view;
 	}
 
+	public void unbind(RedditCommentView view) {
+		if(boundView == view) boundView = null;
+	}
+
 	private void addChild(final RedditPreparedComment child) {
 		directReplies.add(child);
 	}
@@ -210,9 +215,6 @@ public final class RedditPreparedComment implements Hideable, RedditPreparedInbo
 			case DOWNVOTE: voteDirection = -1; break;
 			case UNVOTE: voteDirection = 0; break;
 			case UPVOTE: voteDirection = 1; break;
-
-			default:
-				throw new RuntimeException("Unknown comment action");
 		}
 
 		refreshView();
@@ -263,9 +265,6 @@ public final class RedditPreparedComment implements Hideable, RedditPreparedInbo
 							case UNVOTE:
 							case UPVOTE:
 								voteDirection = lastVoteDirection; break;
-
-							default:
-								throw new RuntimeException("Unknown comment action");
 						}
 					}
 
@@ -309,5 +308,9 @@ public final class RedditPreparedComment implements Hideable, RedditPreparedInbo
 
 	public ViewGroup getBody(Context context, float textSize, Integer textCol, ActiveTextView.OnLinkClickedListener listener) {
 		return body.generate(context, textSize, textCol, listener);
+	}
+
+	public RedditCommentView getBoundView() {
+		return boundView;
 	}
 }

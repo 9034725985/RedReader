@@ -25,6 +25,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.text.ClipboardManager;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -40,6 +41,7 @@ import org.holoeverywhere.app.Activity;
 import org.holoeverywhere.app.AlertDialog;
 import org.holoeverywhere.app.Fragment;
 import org.holoeverywhere.preference.PreferenceManager;
+import org.holoeverywhere.preference.SharedPreferences;
 import org.holoeverywhere.widget.LinearLayout;
 import org.holoeverywhere.widget.ListView;
 import org.holoeverywhere.widget.TextView;
@@ -87,7 +89,7 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 	private CommentListingAdapter adapter;
 
 	private LoadingView loadingView;
-	private LinearLayout notifications, listHeaderNotifications, listHeaderPost, listHeaderSelftext;
+	private LinearLayout notifications, listHeaderNotifications, listHeaderPost, listHeaderSelftext, listFooter;
 	private ListView lv;
 
 	private String after = null;
@@ -97,6 +99,8 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 	private CacheRequest request;
 
 	private RedditPreparedPost post;
+
+	private float commentFontScale = 1.0f;
 
 	private Context context;
 
@@ -184,6 +188,9 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 		super.onCreateView(inflater, container, savedInstanceState);
 		final Context context = container.getContext();
 
+		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+		commentFontScale = PrefsUtility.appearance_fontscale_comments(context, prefs);
+
 		final LinearLayout outer = new LinearLayout(context);
 		outer.setOrientation(android.widget.LinearLayout.VERTICAL);
 
@@ -206,7 +213,10 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 		listHeader.addView(listHeaderNotifications);
 		listHeader.addView(listHeaderSelftext);
 
+		listFooter = createVerticalLinearLayout(context);
+
 		lv.addHeaderView(listHeader);
+		lv.addFooterView(listFooter);
 
 		adapter = new CommentListingAdapter(context, this);
 		lv.setAdapter(adapter);
@@ -217,8 +227,15 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
 				if(view instanceof RedditCommentView) {
-					handleCommentVisibilityToggle((RedditCommentView)view);
-				} else if(position == 0 && !post.src.is_self) {
+					switch(PrefsUtility.pref_behaviour_actions_comment_tap(context, prefs)) {
+						case COLLAPSE:
+							handleCommentVisibilityToggle((RedditCommentView)view);
+							break;
+						case ACTION_MENU:
+							openContextMenu(view);
+							break;
+					}
+				} else if(position == 0 && post != null && !post.src.is_self) {
 					LinkHandler.onLinkClicked(getSupportActivity(), post.url, false);
 				}
 			}
@@ -248,7 +265,8 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 			protected void onDownloadNecessary() {
 				new Handler(Looper.getMainLooper()).post(new Runnable() {
 					public void run() {
-						notifications.addView(loadingView);
+						listFooter.addView(loadingView);
+						adapter.notifyDataSetChanged();
 					}
 				});
 			}
@@ -271,7 +289,7 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 
 				if(!isAdded()) return;
 
-				if(loadingView != null) loadingView.setDone(R.string.download_failed);
+				if(loadingView != null) loadingView.setDoneNoAnim(R.string.download_failed);
 				final RRError error = General.getGeneralErrorForFailure(context, type, t, status);
 
 				new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -337,7 +355,7 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 						if(post.is_self && post.selftext != null && post.selftext.trim().length() > 0) {
 
 							selfText = RedditCommentTextParser.parse(StringEscapeUtils.unescapeHtml4(post.selftext))
-									.generate(context, 14f, null, new ActiveTextView.OnLinkClickedListener() {
+									.generate(context, 14f * commentFontScale, null, new ActiveTextView.OnLinkClickedListener() {
 										public void onClick(String url) {
 											if(url != null) LinkHandler.onLinkClicked(getSupportActivity(), url, false);
 										}
@@ -395,7 +413,7 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 					return;
 				}
 
-				if(isAdded() && loadingView != null) loadingView.setDone(context.getString(R.string.download_done));
+				if(isAdded() && loadingView != null) loadingView.setDoneNoAnim(R.string.download_done);
 			}
 
 			private ArrayList<RedditPreparedComment> buffer = new ArrayList<RedditPreparedComment>();
@@ -461,7 +479,9 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 				}
 
 				menu.add(Menu.NONE, Action.COMMENT_LINKS.ordinal(), 0, R.string.action_comment_links);
+				menu.add(Menu.NONE, Action.COLLAPSE.ordinal(), 0, R.string.action_collapse);
 				menu.add(Menu.NONE, Action.SHARE.ordinal(), 0, R.string.action_share);
+				menu.add(Menu.NONE, Action.COPY.ordinal(), 0, R.string.action_copy);
 				menu.add(Menu.NONE, Action.USER_PROFILE.ordinal(), 0, R.string.action_user_profile);
 				menu.add(Menu.NONE, Action.PROPERTIES.ordinal(), 0, R.string.action_properties);
 
@@ -511,6 +531,7 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 				menu.add(R.string.action_gotosubreddit).setOnMenuItemClickListener(new MenuHandler(RedditPostView.Action.GOTO_SUBREDDIT));
 				menu.add(R.string.action_external).setOnMenuItemClickListener(new MenuHandler(RedditPostView.Action.EXTERNAL));
 				menu.add(R.string.action_share).setOnMenuItemClickListener(new MenuHandler(RedditPostView.Action.SHARE));
+				menu.add(R.string.action_copy).setOnMenuItemClickListener(new MenuHandler(RedditPostView.Action.COPY));
 				menu.add(R.string.action_share_comments).setOnMenuItemClickListener(new MenuHandler(RedditPostView.Action.SHARE_COMMENTS));
 
 				if(post.src.selftext != null && post.src.selftext.length() > 1) menu.add("Links in Self Text").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
@@ -567,7 +588,7 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 	}
 
 	private static enum Action {
-		UPVOTE, UNVOTE, DOWNVOTE, REPORT, SHARE, REPLY, USER_PROFILE, COMMENT_LINKS, PROPERTIES
+		UPVOTE, UNVOTE, DOWNVOTE, REPORT, SHARE, COPY, REPLY, USER_PROFILE, COMMENT_LINKS, COLLAPSE, PROPERTIES
 	}
 
 	@Override
@@ -651,9 +672,20 @@ public class CommentListingFragment extends Fragment implements ActiveTextView.O
 				mailer.putExtra(Intent.EXTRA_SUBJECT, "Comment by " + comment.src.author + " on Reddit");
 
 				// TODO this currently just dumps the markdown
-				mailer.putExtra(Intent.EXTRA_TEXT, StringEscapeUtils.unescapeHtml4(comment.src.body) + "\r\n\r\nSent using RedReader on Android");
+				mailer.putExtra(Intent.EXTRA_TEXT, StringEscapeUtils.unescapeHtml4(comment.src.body));
 				startActivityForResult(Intent.createChooser(mailer, context.getString(R.string.action_share)), 1);
 
+				break;
+
+			case COPY:
+
+				ClipboardManager manager = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+				// TODO this currently just dumps the markdown
+				manager.setText(StringEscapeUtils.unescapeHtml4(comment.src.body));
+				break;
+
+			case COLLAPSE:
+				if(comment.getBoundView() != null) handleCommentVisibilityToggle(comment.getBoundView());
 				break;
 
 			case USER_PROFILE:
